@@ -87,10 +87,13 @@ class RoutingSimGUI(tk.Tk):
         row = ttk.Frame(box)
         row.pack(fill=tk.X, pady=2)
         ttk.Label(row, text="Routers:").pack(side=tk.LEFT)
+
         self.size_var = tk.IntVar(value=DEFAULT_SIZE)
+
         ttk.Spinbox(
             row, from_=3, to=50, textvariable=self.size_var, width=6
         ).pack(side=tk.LEFT, padx=4)
+        
         ttk.Button(row, text="Generate Random", command=self.on_generate_random).pack(
             side=tk.LEFT, padx=4
         )
@@ -141,9 +144,11 @@ class RoutingSimGUI(tk.Tk):
         row = ttk.Frame(box)
         row.pack(fill=tk.X, pady=2)
         ttk.Label(row, text="Router:").pack(side=tk.LEFT)
+
         self.table_router_var = tk.StringVar()
         self.table_router_combo = self._make_dropdown(row, self.table_router_var, width=6)
         self.table_router_combo.pack(side=tk.LEFT, padx=4)
+
         ttk.Button(row, text="Show Table", command=self.on_show_table).pack(
             side=tk.LEFT, padx=4
         )
@@ -154,8 +159,10 @@ class RoutingSimGUI(tk.Tk):
         self.table_tree.heading("dest", text="Destination")
         self.table_tree.heading("next_hop", text="Next Hop")
         self.table_tree.heading("cost", text="Cost")
+
         for col in ("dest", "next_hop", "cost"):
             self.table_tree.column(col, width=100, anchor=tk.CENTER)
+
         self.table_tree.pack(fill=tk.BOTH, pady=(4, 0))
 
     def _build_topology_change_section(self, parent: ttk.Frame):
@@ -171,6 +178,7 @@ class RoutingSimGUI(tk.Tk):
         row = ttk.Frame(box)
         row.pack(fill=tk.X, pady=2)
         ttk.Label(row, text="Link:").pack(side=tk.LEFT)
+
         self.link_var = tk.StringVar()
         self.link_combo = self._make_dropdown(row, self.link_var, width=12)
         self.link_combo.pack(side=tk.LEFT, padx=4)
@@ -223,11 +231,13 @@ class RoutingSimGUI(tk.Tk):
     def _set_dropdown_values(self, dropdown: tk.OptionMenu, variable: tk.StringVar, values):
         menu = dropdown["menu"]
         menu.delete(0, "end")
+
         for v in values:
             menu.add_command(label=v, command=lambda val=v: variable.set(val))
 
     def refresh_router_dropdowns(self):
         routers = self.network.routers
+
         for combo, var in (
             (self.source_combo, self.source_var),
             (self.dest_combo, self.dest_var),
@@ -235,15 +245,19 @@ class RoutingSimGUI(tk.Tk):
             (self.fail_router_combo, self.fail_router_var),
         ):
             self._set_dropdown_values(combo, var, routers)
+
         if routers:
             self.source_var.set(routers[0])
             self.dest_var.set(routers[-1])
             self.table_router_var.set(routers[0])
             self.fail_router_var.set(routers[-1])
+
         link_values = [f"{a}-{b}" for a, b, _ in sorted(self.network.edges())]
         self._set_dropdown_values(self.link_combo, self.link_var, link_values)
+
         if link_values:
             self.link_var.set(link_values[0])
+
         self.topology_info_var.set(
             f"{len(self.network)} routers, {len(self.network.edges())} links"
         )
@@ -269,6 +283,7 @@ class RoutingSimGUI(tk.Tk):
         g = nx.Graph()
         g.add_nodes_from(self.network.routers)
         edge_costs = {}
+
         for a, b, cost in self.network.edges():
             g.add_edge(a, b, weight=cost)
             edge_costs[(a, b)] = cost
@@ -279,11 +294,14 @@ class RoutingSimGUI(tk.Tk):
 
         highlight_edges = set()
         highlight_nodes = set()
+
         if highlight_path and len(highlight_path) > 1:
             n = highlight_upto if highlight_upto is not None else len(highlight_path)
+
             for i in range(min(n, len(highlight_path)) - 1):
                 a, b = highlight_path[i], highlight_path[i + 1]
                 highlight_edges.add(tuple(sorted((a, b))))
+
             highlight_nodes = set(highlight_path[: max(n, 1)])
 
         normal_edges = [
@@ -309,6 +327,7 @@ class RoutingSimGUI(tk.Tk):
         nx.draw_networkx_nodes(
             g, self.pos, ax=self.ax, node_color=node_colors, node_size=550
         )
+
         nx.draw_networkx_labels(g, self.pos, ax=self.ax, font_size=9, font_weight="bold")
         nx.draw_networkx_edge_labels(
             g,
@@ -334,11 +353,14 @@ class RoutingSimGUI(tk.Tk):
         path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if not path:
             return
+
         try:
             self.network = Network.from_csv(path)
+
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror("Load failed", str(exc))
             return
+
         self.simulator = Simulator(self.network)
         self.rebuild_after_topology_edit()
         self.log(f"Loaded topology from {path}.")
@@ -349,6 +371,7 @@ class RoutingSimGUI(tk.Tk):
         )
         if not path:
             return
+
         self.network.to_csv(path)
         self.log(f"Saved topology to {path}.")
 
@@ -356,8 +379,10 @@ class RoutingSimGUI(tk.Tk):
         source, dest = self.source_var.get(), self.dest_var.get()
         if not source or not dest:
             return
+
         try:
             packet = self.simulator.forward_packet(source, dest)
+
         except (ValueError, RuntimeError) as exc:
             messagebox.showerror("Forwarding error", str(exc))
             return
@@ -386,10 +411,13 @@ class RoutingSimGUI(tk.Tk):
     def on_show_table(self):
         router_id = self.table_router_var.get()
         router = self.simulator.routers.get(router_id)
+
         for row in self.table_tree.get_children():
             self.table_tree.delete(row)
+
         if not router:
             return
+
         for dest in sorted(router.routing_table.keys()):
             entry = router.routing_table[dest]
             self.table_tree.insert(
@@ -401,6 +429,7 @@ class RoutingSimGUI(tk.Tk):
         if source not in self.network or dest not in self.network:
             messagebox.showwarning("Invalid pair", "Pick a valid source/destination first.")
             return
+
         result = self.simulator.apply_random_topology_change(source, dest)
         self._recompute_positions()
         self.refresh_router_dropdowns()
@@ -412,6 +441,7 @@ class RoutingSimGUI(tk.Tk):
         value = self.link_var.get()
         if not value or "-" not in value:
             return
+
         a, b = value.split("-", 1)
         self.network.remove_link(a, b)
         self.rebuild_after_topology_edit()
@@ -422,6 +452,7 @@ class RoutingSimGUI(tk.Tk):
         router_id = self.fail_router_var.get()
         if not router_id:
             return
+
         self.network.remove_router(router_id)
         self.simulator.routers.pop(router_id, None)
         self.rebuild_after_topology_edit()

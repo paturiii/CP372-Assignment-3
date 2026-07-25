@@ -27,16 +27,19 @@ def build_network(args: argparse.Namespace):
     if args.load:
         net = Network.from_csv(args.load)
         print(f"Loaded topology from {args.load}: {net}")
+
     else:
         n = args.random or 12
         net = Network.random_topology(n, seed=args.seed)
         print(f"Generated random topology with {n} routers (seed={args.seed}): {net}")
+
     return net
 
 
 def print_topology(net: Network):
     print(f"\nRouters ({len(net)}): {', '.join(net.routers)}")
     print(f"Links ({len(net.edges())}):")
+
     for a, b, cost in sorted(net.edges()):
         print(f"  {a} - {b}   cost={cost:g}")
 
@@ -45,6 +48,7 @@ def cmd_table(sim: Simulator, router_id: str):
     if router_id not in sim.routers:
         print(f"Unknown router: {router_id}")
         return
+
     print()
     print(sim.routers[router_id].format_table())
 
@@ -52,9 +56,11 @@ def cmd_table(sim: Simulator, router_id: str):
 def cmd_send(sim: Simulator, source: str, destination: str):
     try:
         packet = sim.forward_packet(source, destination)
+
     except (ValueError, RuntimeError) as exc:
         print(f"Error forwarding packet: {exc}")
         return
+
     print(f"\n{packet.label()}; Source: {source}; Destination: {destination}")
     print(packet.summary())
 
@@ -66,10 +72,12 @@ def cmd_change(
     if source not in sim.network or destination not in sim.network:
         print("Both watched routers must exist in the topology.")
         return
+
     result = sim.apply_random_topology_change(source, destination, rng=rng)
     print()
     print(result.format())
     affected_router = sim.routers.get(source)
+
     if affected_router:
         print()
         print(affected_router.format_table())
@@ -90,31 +98,42 @@ def interactive_menu(sim: Simulator):
         "  quit                          - exit\n"
     )
     print(help_text)
+    
     while True:
         try:
             line = input("routing-sim> ").strip()
+
         except (EOFError, KeyboardInterrupt):
             print()
             break
+
         if not line:
             continue
+
         parts = line.split()
         cmd = parts[0].lower()
 
         if cmd in ("quit", "exit"):
             break
+
         elif cmd == "help":
             print(help_text)
+
         elif cmd == "topology":
             print_topology(sim.network)
+
         elif cmd == "routers":
             print(", ".join(sim.network.routers))
+
         elif cmd == "table" and len(parts) == 2:
             cmd_table(sim, parts[1])
+
         elif cmd == "send" and len(parts) == 3:
             cmd_send(sim, parts[1], parts[2])
+
         elif cmd == "change" and len(parts) == 3:
             cmd_change(sim, parts[1], parts[2], seed=None)
+
         else:
             print("Unrecognized command. Type 'help' for usage.")
 

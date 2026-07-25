@@ -41,6 +41,7 @@ class TopologyChangeResult:
     def format(self):
         before = " \u2192 ".join(self.before_path) if self.before_path else "(unreachable)"
         after = " \u2192 ".join(self.after_path) if self.after_path else "(unreachable)"
+        
         return (
             f"Topology change: {self.description}\n"
             f"Before: {before}   Cost = {_fmt_cost(self.before_cost)}\n"
@@ -55,8 +56,6 @@ class Simulator:
         self._packet_counter = itertools.count(1)
 
     def rebuild_all_routing_tables(self):
-        """Recompute routing tables for every router (called after any
-        topology change)."""
         self.routers = build_all_routing_tables(self.network)
 
     def next_packet_id(self):
@@ -78,6 +77,7 @@ class Simulator:
         """
         if source not in self.network:
             raise ValueError(f"Unknown source router: {source}")
+
         if destination not in self.network:
             raise ValueError(f"Unknown destination router: {destination}")
 
@@ -86,15 +86,19 @@ class Simulator:
 
         current = source
         visited_guard = set()
+
         while True:
             if current in visited_guard:
                 raise RuntimeError("Routing loop detected while forwarding packet")
+
             visited_guard.add(current)
 
             router = self.routers[current]
             nxt = router.forward(packet, verbose=verbose)  # packet passed to the router object
+
             if nxt is None:
                 break  # router.forward() returns None once it IS the destination
+
             current = nxt
 
         return packet
@@ -123,6 +127,7 @@ class Simulator:
             after_router = self.routers.get(watch_source)
             after_path = after_router.path_to(watch_destination) if after_router else []
             after_cost = after_router.cost_to(watch_destination) if after_router else INF
+        
         else:
             after_path, after_cost = [], INF
 
@@ -143,9 +148,11 @@ class Simulator:
 
         for choice in choices:
             result = self._try_change(choice, rng)
+
             if result is not None:
                 return result
-        # Fallback: should not normally happen with >=3 routers
+        # Fallback: should not happen with >=3 routers
+
         return "noop", "no change (topology too small)"
 
     def _try_change(self, choice: str, rng: random.Random):
@@ -154,29 +161,36 @@ class Simulator:
 
         if choice == "link_failure" and edges:
             a, b, cost = rng.choice(edges)
+
             if self._is_bridge(a, b):
                 return None  # don't disconnect the network
+
             self.network.remove_link(a, b)
             return "link_failure", f"link {a}-{b} fails"
 
         if choice == "new_link" and len(routers) >= 2:
             existing = {tuple(sorted((a, b))) for a, b, _ in edges}
+
             candidates = [
                 (a, b)
                 for a, b in itertools.combinations(routers, 2)
                 if tuple(sorted((a, b))) not in existing
             ]
+
             if not candidates:
                 return None
+
             a, b = rng.choice(candidates)
             cost = rng.randint(1, 20)
             self.network.add_link(a, b, cost)
+
             return "new_link", f"new link {a}-{b} added (cost {cost})"
 
         if choice == "link_cost_change" and edges:
             a, b, old_cost = rng.choice(edges)
             new_cost = rng.randint(1, 30)
             self.network.set_link_cost(a, b, new_cost)
+            
             return (
                 "link_cost_change",
                 f"link {a}-{b} cost changes from {old_cost:g} to {new_cost}",
@@ -188,6 +202,7 @@ class Simulator:
             ]
             if not candidate_routers:
                 return None
+
             r = rng.choice(candidate_routers)
             self.network.remove_router(r)
             self.routers.pop(r, None)
@@ -198,15 +213,18 @@ class Simulator:
     def _is_bridge(self, a: str, b: str):
         test_net = self.network.copy()
         test_net.remove_link(a, b)
+
         return not test_net.is_connected()
 
     def _router_is_critical(self, router_id: str):
         test_net = self.network.copy()
         test_net.remove_router(router_id)
+
         return not test_net.is_connected()
 
 
 def _fmt_cost(cost: float):
     if cost == INF:
         return "inf"
+
     return f"{cost:g}"

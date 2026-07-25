@@ -22,11 +22,9 @@ class Packet:
     total_cost: float = 0.0
 
     def visit(self, router_id: str, link_cost: float = 0.0):
-        """Record a router visit: append it to the path, bump hop count
-        (except for the very first/originating router), and add link cost.
-        """
         first_visit = len(self.path) == 0
         self.path.append(router_id)
+
         if not first_visit:
             self.hop_count += 1
             self.total_cost += link_cost

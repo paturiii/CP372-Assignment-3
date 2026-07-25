@@ -43,9 +43,11 @@ class Router:
         for dest in self.network.routers:
             if dest == self.router_id:
                 continue
+
             cost = distances.get(dest, INF)
             if cost == INF:
                 continue  # unreachable (shouldn't happen in a connected net)
+
             path = _reconstruct_path(previous, self.router_id, dest)
             next_hop = path[1] if len(path) > 1 else None
             table[dest] = RouteEntry(next_hop=next_hop, cost=cost, path=path)
@@ -85,6 +87,7 @@ class Router:
                 f"Router {self.router_id} has no route to {packet.destination}; "
                 "destination may be unreachable."
             )
+
         return nxt
 
     def next_hop(self, destination: str):
@@ -114,6 +117,7 @@ class Router:
         for dest in sorted(self.routing_table.keys(), key=_dest_sort_key):
             entry = self.routing_table[dest]
             lines.append(f"| {dest} | {entry.next_hop} | {entry.cost:g} |")
+
         return "\n".join(lines)
 
     def __repr__(self):
@@ -134,11 +138,13 @@ def dijkstra(
         dist_u, u = heapq.heappop(heap)
         if u in visited:
             continue
+
         visited.add(u)
 
         for v, weight in network.neighbors(u).items():
             if v in visited:
                 continue
+
             candidate = dist_u + weight
             if candidate < distances.get(v, INF):
                 distances[v] = candidate
@@ -155,9 +161,12 @@ def _reconstruct_path(
     node = dest
     while node != source:
         node = previous.get(node)
+
         if node is None:
             return []  # unreachable
+
         path.append(node)
+
     path.reverse()
     return path
 
@@ -179,4 +188,5 @@ def build_all_routing_tables(
         r = Router(rid, network)
         r.build_routing_table()
         routers[rid] = r
+        
     return routers
