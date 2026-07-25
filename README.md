@@ -65,7 +65,7 @@ or drop into an interactive menu.
 # Load an existing topology
 python -m src.cli --load data/sample_topology.csv --interactive
 
-# Or generate a random, guaranteed-connected topology (10-20 routers recommended)
+# Or generate a random, guaranteed-connected topology (10-20 routers)
 python -m src.cli --random 15 --seed 42 --interactive
 ```
 
@@ -149,8 +149,6 @@ measures, for each size:
 - Number of routing table entries affected by a random topology change
 - Recompute time after that topology change (ms)
 
-Outputs (all under `analysis/results/`, ready to drop into your report):
-
 - `performance_results.csv` — raw data
 - `performance_results.md` — the same table in Markdown, copy-paste ready
 - `computation_time_vs_size.png`
@@ -178,5 +176,5 @@ The GUI lets you:
   link** or **fail a specific router** — the graph, routing tables, and
   event log all update in real time.
 
-All actions are also logged in the on-screen event log so you can screenshot
-the before/after state for your report.
+
+**Not**e: The GUI is a bit laggy due to TKinters version, you may need to press a button multiple times for it to work properly
