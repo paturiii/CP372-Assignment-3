@@ -29,11 +29,9 @@ class Network:
         self._adj: Dict[str, Dict[str, float]] = {}
 
     def add_router(self, router_id: str):
-        """Add a router (node) with no links, if it doesn't already exist."""
         self._adj.setdefault(router_id, {})
 
     def remove_router(self, router_id: str):
-        """Remove a router and all links incident to it (router failure)."""
         if router_id not in self._adj:
             return
         for neighbor in list(self._adj[router_id].keys()):
@@ -41,7 +39,6 @@ class Network:
         del self._adj[router_id]
 
     def add_link(self, a: str, b: str, cost: float):
-        """Add (or update) a bidirectional link between a and b with given cost."""
         if a == b:
             raise ValueError("Cannot create a link from a router to itself")
         self.add_router(a)
@@ -50,12 +47,10 @@ class Network:
         self._adj[b][a] = cost
 
     def remove_link(self, a: str, b: str):
-        """Remove the link between a and b (link failure). No-op if absent."""
         self._adj.get(a, {}).pop(b, None)
         self._adj.get(b, {}).pop(a, None)
 
     def set_link_cost(self, a: str, b: str, cost: float):
-        """Change the cost of an existing link (must already exist)."""
         if not self.has_link(a, b):
             raise ValueError(f"No link between {a} and {b} to update")
         self._adj[a][b] = cost
@@ -111,9 +106,6 @@ class Network:
         return len(visited) == len(self._adj)
 
     def to_matrix(self):
-        """Return (ordered_router_ids, matrix) where matrix[i][j] is the cost
-        of the link between router i and j (INF if none, 0 on the diagonal).
-        """
         ids = self.routers
         index = {r: i for i, r in enumerate(ids)}
         n = len(ids)
@@ -126,7 +118,6 @@ class Network:
 
     @classmethod
     def from_csv(cls, path: str):
-        """Load an edge-list CSV with header: router1,router2,cost"""
         net = cls()
         with open(path, newline="") as f:
             reader = csv.reader(f)
@@ -193,7 +184,6 @@ class Network:
 
 
 def _router_sort_key(router_id: str):
-    """Sort router IDs like R1, R2, ..., R10, R11 numerically when possible."""
     digits = "".join(ch for ch in router_id if ch.isdigit())
     prefix = "".join(ch for ch in router_id if not ch.isdigit())
     return (prefix, int(digits) if digits else 0, router_id)

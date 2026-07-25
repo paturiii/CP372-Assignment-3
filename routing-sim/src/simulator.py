@@ -196,13 +196,11 @@ class Simulator:
         return None
 
     def _is_bridge(self, a: str, b: str):
-        """Return True if removing edge (a,b) would disconnect the graph."""
         test_net = self.network.copy()
         test_net.remove_link(a, b)
         return not test_net.is_connected()
 
     def _router_is_critical(self, router_id: str):
-        """Return True if removing this router would disconnect the graph."""
         test_net = self.network.copy()
         test_net.remove_router(router_id)
         return not test_net.is_connected()

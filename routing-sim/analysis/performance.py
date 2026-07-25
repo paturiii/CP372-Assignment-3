@@ -67,8 +67,10 @@ def measure_size(n: int, seed: int):
     path_lengths = []
     costs = []
     total_entries = 0
+
     for rid, router in routers.items():
         total_entries += len(router.routing_table)
+
         for entry in router.routing_table.values():
             path_lengths.append(len(entry.path) - 1)  # hop count
             costs.append(entry.cost)
@@ -90,10 +92,12 @@ def measure_size(n: int, seed: int):
     recompute_ms = (time.perf_counter() - start) * 1000.0
 
     changed = 0
+
     for rid, before_table in before_tables.items():
         after_router = sim.routers.get(rid)
         after_table = after_router.routing_table if after_router else {}
         keys = set(before_table.keys()) | set(after_table.keys())
+
         for dest in keys:
             b = before_table.get(dest)
             a = after_table.get(dest)
@@ -115,9 +119,11 @@ def measure_size(n: int, seed: int):
 
 def run_all(sizes: List[int] = SIZES, seed: int = SEED):
     results = []
+
     for n in sizes:
         print(f"Measuring performance for {n} routers...")
         results.append(measure_size(n, seed))
+        
     return results
 
 
@@ -135,6 +141,7 @@ def write_csv(results: List[SizeResult], path: str):
                 "Recompute Time After Change (ms)",
             ]
         )
+
         for r in results:
             writer.writerow(
                 [
@@ -156,12 +163,14 @@ def write_markdown(results: List[SizeResult], path: str):
         "Entries Changed After Topology Change | Recompute Time After Change (ms) |",
         "|---|---|---|---|---|---|---|",
     ]
+
     for r in results:
         lines.append(
             f"| {r.size} | {r.avg_path_length:.2f} | {r.avg_routing_cost:.2f} | "
             f"{r.num_routing_table_entries} | {r.computation_time_ms:.3f} | "
             f"{r.change_entries_affected} | {r.change_recompute_time_ms:.3f} |"
         )
+        
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")
 

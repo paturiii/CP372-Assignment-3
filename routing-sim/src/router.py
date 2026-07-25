@@ -30,9 +30,6 @@ class RouteEntry:
 
 
 class Router:
-    """A single router in the network, capable of building its own
-    link-state routing table via Dijkstra's algorithm.
-    """
 
     def __init__(self, router_id: str, network: Network):
         self.router_id = router_id
@@ -40,9 +37,6 @@ class Router:
         self.routing_table: Dict[str, RouteEntry] = {}
 
     def build_routing_table(self):
-        """Run Dijkstra's algorithm from this router and (re)build the
-        routing table: {destination: RouteEntry(next_hop, cost, path)}.
-        """
         distances, previous = dijkstra(self.network, self.router_id)
 
         table: Dict[str, RouteEntry] = {}
@@ -111,6 +105,7 @@ class Router:
             | Destination | Next Hop | Cost |
             |---|---|---|
         """
+
         lines = [
             f"Routing table for {self.router_id}:",
             "| Destination | Next Hop | Cost |",
@@ -128,12 +123,6 @@ class Router:
 def dijkstra(
     network: Network, source: str
 ):
-    """Classic Dijkstra shortest-path from `source` over `network`.
-
-    Returns:
-        distances: {router_id: shortest_cost_from_source}
-        previous:  {router_id: predecessor_router_id_on_shortest_path}
-    """
     distances: Dict[str, float] = {r: INF for r in network.routers}
     previous: Dict[str, Optional[str]] = {r: None for r in network.routers}
     distances[source] = 0.0
@@ -182,9 +171,9 @@ def _dest_sort_key(router_id: str):
 def build_all_routing_tables(
     network: Network,
 ):
-    """Convenience: build a Router (with routing table) for every router in
-    the network. Returns {router_id: Router}.
-    """
+    #Convenience: build a Router (with routing table) for every router in
+    #the network. Returns {router_id: Router}.
+    
     routers = {}
     for rid in network.routers:
         r = Router(rid, network)
