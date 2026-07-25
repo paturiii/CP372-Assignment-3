@@ -59,6 +59,40 @@ class Router:
         self.routing_table = table
         return table
 
+    def forward(self, packet, verbose: bool = True):
+        """Process a packet that has arrived at this router (Part C).
+
+        This is the router's own action on the packet, as required by the
+        assignment: the router stamps its label onto `packet.path`, bumps
+        `packet.hop_count`, and adds the cost of the link it arrived on to
+        `packet.total_cost` (all via `Packet.visit`) - then optionally
+        displays what it just did. It finally returns the next hop toward
+        the packet's destination, or None if this router IS the
+        destination (forwarding is complete).
+        """
+        previous_hop = packet.path[-1] if packet.path else None
+        link_cost = self.network.link_cost(previous_hop, self.router_id) if previous_hop else 0.0
+
+        packet.visit(self.router_id, link_cost)
+
+        if verbose:
+            print(
+                f"  [{self.router_id}] forwarding {packet.label()}: "
+                f"path so far = {packet.path_str()}, "
+                f"hop_count = {packet.hop_count}, total_cost = {packet.total_cost:g}"
+            )
+
+        if self.router_id == packet.destination:
+            return None
+
+        nxt = self.next_hop(packet.destination)
+        if nxt is None:
+            raise RuntimeError(
+                f"Router {self.router_id} has no route to {packet.destination}; "
+                "destination may be unreachable."
+            )
+        return nxt
+
     def next_hop(self, destination: str):
         entry = self.routing_table.get(destination)
         return entry.next_hop if entry else None

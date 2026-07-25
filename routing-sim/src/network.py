@@ -18,18 +18,12 @@ from __future__ import annotations
 import csv
 import math
 import random
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Optional
 
 INF = math.inf
 
 
 class Network:
-    """Weighted, undirected graph representing a router topology.
-
-    Internal representation: adjacency dict of dicts.
-        self._adj["R1"]["R2"] = 4.0   means a link R1<->R2 with cost 4.0
-    Absence of a key means "no direct link" (infinite cost).
-    """
 
     def __init__(self):
         self._adj: Dict[str, Dict[str, float]] = {}
@@ -81,7 +75,6 @@ class Network:
         return dict(self._adj.get(router_id, {}))
 
     def edges(self):
-        """Return each undirected edge once as (a, b, cost)."""
         seen = set()
         result = []
         for a in self._adj:
@@ -164,19 +157,9 @@ class Network:
         num_routers: int,
         min_cost: int = 1,
         max_cost: int = 20,
-        extra_edge_ratio: float = 0.3,
+        extra_edge_ratio: float = 0.5,
         seed: Optional[int] = None,
     ):
-        """Generate a random, guaranteed-connected topology.
-
-        Strategy:
-          1. Create `num_routers` routers R1..Rn.
-          2. Build a random spanning tree over them (guarantees full
-             connectivity with n-1 edges, no cycles yet).
-          3. Add extra random edges (redundant paths) on top, so the graph
-             is not a tree, controlled by `extra_edge_ratio` (fraction of
-             the n-1 tree edges to add as additional random edges).
-        """
         rng = random.Random(seed)
         net = cls()
         ids = [f"R{i}" for i in range(1, num_routers + 1)]

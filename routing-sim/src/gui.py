@@ -117,16 +117,12 @@ class RoutingSimGUI(tk.Tk):
         row.pack(fill=tk.X, pady=2)
         ttk.Label(row, text="Source:").grid(row=0, column=0, sticky=tk.W)
         self.source_var = tk.StringVar()
-        self.source_combo = ttk.Combobox(
-            row, textvariable=self.source_var, width=8, state="readonly"
-        )
+        self.source_combo = self._make_dropdown(row, self.source_var, width=6)
         self.source_combo.grid(row=0, column=1, padx=4)
 
         ttk.Label(row, text="Dest:").grid(row=0, column=2, sticky=tk.W)
         self.dest_var = tk.StringVar()
-        self.dest_combo = ttk.Combobox(
-            row, textvariable=self.dest_var, width=8, state="readonly"
-        )
+        self.dest_combo = self._make_dropdown(row, self.dest_var, width=6)
         self.dest_combo.grid(row=0, column=3, padx=4)
 
         ttk.Button(box, text="Send Packet", command=self.on_send_packet).pack(
@@ -146,9 +142,7 @@ class RoutingSimGUI(tk.Tk):
         row.pack(fill=tk.X, pady=2)
         ttk.Label(row, text="Router:").pack(side=tk.LEFT)
         self.table_router_var = tk.StringVar()
-        self.table_router_combo = ttk.Combobox(
-            row, textvariable=self.table_router_var, width=8, state="readonly"
-        )
+        self.table_router_combo = self._make_dropdown(row, self.table_router_var, width=6)
         self.table_router_combo.pack(side=tk.LEFT, padx=4)
         ttk.Button(row, text="Show Table", command=self.on_show_table).pack(
             side=tk.LEFT, padx=4
@@ -178,9 +172,7 @@ class RoutingSimGUI(tk.Tk):
         row.pack(fill=tk.X, pady=2)
         ttk.Label(row, text="Link:").pack(side=tk.LEFT)
         self.link_var = tk.StringVar()
-        self.link_combo = ttk.Combobox(
-            row, textvariable=self.link_var, width=14, state="readonly"
-        )
+        self.link_combo = self._make_dropdown(row, self.link_var, width=12)
         self.link_combo.pack(side=tk.LEFT, padx=4)
         ttk.Button(row, text="Fail Link", command=self.on_fail_link).pack(
             side=tk.LEFT, padx=2
@@ -190,9 +182,7 @@ class RoutingSimGUI(tk.Tk):
         row2.pack(fill=tk.X, pady=2)
         ttk.Label(row2, text="Router:").pack(side=tk.LEFT)
         self.fail_router_var = tk.StringVar()
-        self.fail_router_combo = ttk.Combobox(
-            row2, textvariable=self.fail_router_var, width=8, state="readonly"
-        )
+        self.fail_router_combo = self._make_dropdown(row2, self.fail_router_var, width=6)
         self.fail_router_combo.pack(side=tk.LEFT, padx=4)
         ttk.Button(row2, text="Fail Router", command=self.on_fail_router).pack(
             side=tk.LEFT, padx=2
@@ -216,25 +206,44 @@ class RoutingSimGUI(tk.Tk):
         self.log_text.see(tk.END)
         self.log_text.configure(state=tk.DISABLED)
 
+    def _make_dropdown(self, parent, variable: tk.StringVar, width: int = 8) -> tk.OptionMenu:
+        """A tk.OptionMenu-based dropdown.
+
+        We deliberately avoid ttk.Combobox here: Tk 8.6.12 (bundled with
+        several recent python.org macOS installers) has a known Aqua bug
+        where clicks inside the combobox's popdown listbox are ignored, so
+        users can open the list but can never actually select an item.
+        tk.OptionMenu renders its list as a native menu instead, which
+        isn't affected by that bug.
+        """
+        om = tk.OptionMenu(parent, variable, "")
+        om.configure(width=width, anchor=tk.W)
+        return om
+
+    def _set_dropdown_values(self, dropdown: tk.OptionMenu, variable: tk.StringVar, values):
+        menu = dropdown["menu"]
+        menu.delete(0, "end")
+        for v in values:
+            menu.add_command(label=v, command=lambda val=v: variable.set(val))
+
     def refresh_router_dropdowns(self):
         routers = self.network.routers
-        for combo in (
-            self.source_combo,
-            self.dest_combo,
-            self.table_router_combo,
-            self.fail_router_combo,
+        for combo, var in (
+            (self.source_combo, self.source_var),
+            (self.dest_combo, self.dest_var),
+            (self.table_router_combo, self.table_router_var),
+            (self.fail_router_combo, self.fail_router_var),
         ):
-            combo["values"] = routers
+            self._set_dropdown_values(combo, var, routers)
         if routers:
             self.source_var.set(routers[0])
             self.dest_var.set(routers[-1])
             self.table_router_var.set(routers[0])
             self.fail_router_var.set(routers[-1])
-        self.link_combo["values"] = [
-            f"{a}-{b}" for a, b, _ in sorted(self.network.edges())
-        ]
-        if self.link_combo["values"]:
-            self.link_var.set(self.link_combo["values"][0])
+        link_values = [f"{a}-{b}" for a, b, _ in sorted(self.network.edges())]
+        self._set_dropdown_values(self.link_combo, self.link_var, link_values)
+        if link_values:
+            self.link_var.set(link_values[0])
         self.topology_info_var.set(
             f"{len(self.network)} routers, {len(self.network.edges())} links"
         )

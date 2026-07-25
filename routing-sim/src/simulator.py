@@ -63,11 +63,18 @@ class Simulator:
         return next(self._packet_counter)
 
     def forward_packet(
-        self, source: str, destination: str, packet_id: Optional[int] = None
+        self,
+        source: str,
+        destination: str,
+        packet_id: Optional[int] = None,
+        verbose: bool = True,
     ):
         """Simulate a packet travelling hop-by-hop from source to
-        destination along the shortest path, as computed by each router's
-        Dijkstra routing table.
+        destination. The packet object is physically handed to each
+        simulated Router object in turn - it is each Router's own
+        `forward()` method that stamps its label onto the packet, updates
+        the hop count / accumulated cost, and decides (from its own
+        Dijkstra routing table) which router to hand the packet to next.
         """
         if source not in self.network:
             raise ValueError(f"Unknown source router: {source}")
@@ -78,26 +85,17 @@ class Simulator:
         packet = Packet(id=pid, source=source, destination=destination)
 
         current = source
-        packet.visit(current)  # originating router stamps itself, no cost yet
-
-        if source == destination:
-            return packet
-
-        visited_guard = {current}
-        while current != destination:
-            router = self.routers[current]
-            nxt = router.next_hop(destination)
-            if nxt is None:
-                raise RuntimeError(
-                    f"Router {current} has no route to {destination}; "
-                    "destination may be unreachable."
-                )
-            link_cost = self.network.link_cost(current, nxt)
-            packet.visit(nxt, link_cost)
-            current = nxt
+        visited_guard = set()
+        while True:
             if current in visited_guard:
                 raise RuntimeError("Routing loop detected while forwarding packet")
             visited_guard.add(current)
+
+            router = self.routers[current]
+            nxt = router.forward(packet, verbose=verbose)  # packet passed to the router object
+            if nxt is None:
+                break  # router.forward() returns None once it IS the destination
+            current = nxt
 
         return packet
 

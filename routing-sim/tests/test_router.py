@@ -98,3 +98,38 @@ def test_routing_table_skips_unreachable_destinations():
     table = router.build_routing_table()
     assert "R3" not in table
     assert "R2" in table
+
+
+def test_router_forward_stamps_label_and_updates_packet():
+    """Part C: the ROUTER object itself (not an external simulator) must
+    stamp its label onto the packet and update hop_count/total_cost."""
+    from src.packet import Packet
+
+    net = make_sample_network()
+    routers = build_all_routing_tables(net)
+    packet = Packet(id=1, source="R1", destination="R4")
+
+    nxt = routers["R1"].forward(packet, verbose=False)
+    assert packet.path == ["R1"]
+    assert packet.hop_count == 0
+    assert packet.total_cost == 0
+    assert nxt == "R2"
+
+    nxt = routers["R2"].forward(packet, verbose=False)
+    assert packet.path == ["R1", "R2"]
+    assert packet.hop_count == 1
+    assert packet.total_cost == 1
+    assert nxt == "R3"
+
+
+def test_router_forward_returns_none_at_destination():
+    from src.packet import Packet
+
+    net = make_sample_network()
+    routers = build_all_routing_tables(net)
+    packet = Packet(id=2, source="R1", destination="R1")
+
+    nxt = routers["R1"].forward(packet, verbose=False)
+    assert nxt is None
+    assert packet.path == ["R1"]
+    assert packet.hop_count == 0
